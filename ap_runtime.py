@@ -3,14 +3,7 @@ import sys
 from dotenv import load_dotenv
 from vertexai.agent_engines import AdkApp
 
-# =====================================================================
-# 1. ENVIRONMENT & mTLS CONFIGURATION
-# =====================================================================
-# Bypass local OpenSSL mTLS decoder routine issues dynamically
-os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
-os.environ["GOOGLE_API_USE_MTLS_ENDPOINT"] = "never"
-
-# Set up project path namespaces
+# Set up project path namespaces and change directory to parent to allow proper bq_mcp_agent packaging
 project_parent = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(project_parent)
 if project_parent not in sys.path:
@@ -37,7 +30,7 @@ client = vertexai.Client(
     http_options=dict(api_version="v1beta1")
 )
 
-# Import and wrap the Data Science app
+# Import and wrap the Data Science app via its package path
 from bq_mcp_agent.agent import app
 adk_app = AdkApp(app=app)
 
@@ -55,10 +48,9 @@ bq_env_keys = [
 
 env_vars = {key: os.environ[key] for key in bq_env_keys if key in os.environ}
 
-# Add managed runtime URIs for Session, Memory, and Artifact services
+# Add managed runtime URIs for Session and Memory services
 env_vars["ADK_SESSION_SERVICE_URI"] = "agentengine://"
 env_vars["ADK_MEMORY_SERVICE_URI"] = "agentengine://"
-env_vars["ADK_ARTIFACT_SERVICE_URI"] = "gs://adk-sandbox-bucket"
 
 staging_bucket_uri = os.environ.get("ADK_ARTIFACT_SERVICE_URI", "gs://adk-sandbox-bucket")
 
@@ -81,6 +73,7 @@ requirements_list = [
 # =====================================================================
 print(f"Deploying 'bq_mcp_agent' to AgentPlatform in a single step...")
 
+# Create a new resource with your agent deployed to Agent Runtime.
 remote_agent = client.agent_engines.create(
     agent=adk_app,
     config={
