@@ -42,13 +42,10 @@ mcp_toolset = LazyMCPToolset(
     f"projects/gcp-sandbox-kwlee/locations/global/mcpServers/agentregistry-00000000-0000-0000-3781-81d342859334"
 )
 
-async def add_session_to_memory_callback(callback_context: CallbackContext):
-    """Ensures conversation continuity by triggering memory generation."""
-    try:
-        await callback_context.add_session_to_memory()
-    except ValueError:
-        pass
-
+# https://docs.cloud.google.com/gemini-enterprise-agent-platform/scale/memory-bank/adk-quickstart#memory-generation-callback
+async def generate_memories_callback(callback_context: CallbackContext):    
+    await callback_context.add_session_to_memory()
+    return None
 
 root_agent = Agent(
     name="bq_mcp_agent",
@@ -61,13 +58,13 @@ root_agent = Agent(
         "Your goal is to query enterprise BigQuery datasets, analyze the data, "
         "and summarize your findings. "
         f"When executing SQL queries, use project_id `{project_id}` as the "
-        "billing project unless the user specifies a different one. "
+        " project unless the user specifies a different one. "
         "Present results clearly with formatted numbers. "
         "Remember user preferences like preferred regions, date ranges, "
         "or analysis formats across conversations."
     ),
     tools=[mcp_toolset, PreloadMemoryTool()],
-    after_agent_callback=add_session_to_memory_callback,
+    after_agent_callback=generate_memories_callback,
 )
 
 app = App(

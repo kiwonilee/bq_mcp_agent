@@ -63,6 +63,7 @@ Resolve and lock all ADK, GCP, and MCP dependencies using `uv`:
 
 ```bash
 uv sync
+source .venv/bin/activate
 ```
 
 ---
