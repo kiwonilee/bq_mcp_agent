@@ -1,0 +1,30 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.uv
+
+# Environment files
+.env
+.env.*
+
+# ADK-generated files
+.adk/
+*.log
+
+# Pytest and Cache
+.pytest_cache/
+.mypy_cache/
+
+# IDE files and OS-specific files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints/
