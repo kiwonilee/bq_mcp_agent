@@ -90,31 +90,11 @@ Once initialized, navigate your browser to the URL printed in the terminal (usua
 
 For serverless, managed API deployments, you can upload this Data Science Orchestrator Agent to **Vertex AI Agent Engine (Reasoning Engine)**.
 
-### 1. Provision the Dedicated Service Account
-Create a custom service account and bind the required permissions (BigQuery Data Viewer, BigQuery Job User, Storage Admin, Vertex AI User):
+### 1. Provision IAM Scopes for Agent Identity
+When deploying with Agent Identity (`identity_type=AGENT_IDENTITY`), Google Cloud automatically generates a read-only, system-attested principal identifier for your Agent Runtime instance upon creation:
+`principal://iam.googleapis.com/projects/{PROJECT_NUMBER}/locations/global/workloadIdentityPools/...`
 
-```bash
-export PROJECT_ID="gcp-sandbox-kwlee"
-export SA_EMAIL="bq-mcp-agent-sa@${PROJECT_ID}.iam.gserviceaccount.com"
-
-# Create the Service Account
-gcloud iam service-accounts create bq-mcp-agent-sa \
-    --description="Managed Service Account for BigQuery MCP Orchestrator Agent" \
-    --display-name="BigQuery MCP Agent SA"
-
-# Grant BigQuery access
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${SA_EMAIL}" --role="roles/bigquery.dataViewer"
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${SA_EMAIL}" --role="roles/bigquery.jobUser"
-
-# Grant Vertex AI & GCS Storage permissions
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${SA_EMAIL}" --role="roles/aiplatform.user"
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${SA_EMAIL}" --role="roles/storage.objectAdmin"
-
-# Grant Service Account User role to your deployer account
-gcloud iam service-accounts add-iam-policy-binding ${SA_EMAIL} \
-    --member="user:YOUR_GOOGLE_EMAIL@google.com" \
-    --role="roles/iam.serviceAccountUser"
-```
+Grant the necessary BigQuery, Vertex AI, and Storage Admin scopes to your project's Agent Engine Workload Identity Pool or directly via your Google Cloud console to authorize your deployed Agent to read BigQuery tables and call Gemini.
 
 ### 2. Execute the Deployment Script
 Once `.env` configurations are finalized, execute the dedicated [ap_runtime.py](file:///usr/local/google/home/kiwonlee/workspace/agents/bq_mcp_agent/ap_runtime.py) script with `uv`:
@@ -123,5 +103,5 @@ Once `.env` configurations are finalized, execute the dedicated [ap_runtime.py](
 uv run python ap_runtime.py
 ```
 
-Upon successful deployment, the script will print the remote Resource URI that you can use to stream and trigger remote data-science chat sessions:
+Upon successful deployment, the script will print both the remote Resource URI and the runtime's **Effective Identity**. You can use the URI to trigger remote data-science chat sessions:
 `projects/{project_number}/locations/us-central1/reasoningEngines/{engine_id}`

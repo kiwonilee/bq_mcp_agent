@@ -1,5 +1,7 @@
 import os
 import sys
+os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
+os.environ["GOOGLE_API_USE_MTLS_ENDPOINT"] = "never"
 import vertexai
 from dotenv import load_dotenv
 from vertexai.agent_engines import AdkApp
@@ -26,8 +28,14 @@ LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 if LOCATION == "global":
     LOCATION = "us-central1"  # Agent Engine is deployed regionally
 
-# 1. Initialize the modern AgentPlatform Client
-client = vertexai.Client(project=PROJECT_ID, location=LOCATION)
+# 1. Initialize the modern AgentPlatform Client with v1beta1 for Agent Identity support
+from vertexai import types as vertexai_types
+
+client = vertexai.Client(
+    project=PROJECT_ID,
+    location=LOCATION,
+    http_options=dict(api_version="v1beta1")
+)
 
 # Import the Data Science root agent using the fully qualified package namespace
 from bq_mcp_agent.agent import root_agent
@@ -61,11 +69,7 @@ env_vars["ADK_ARTIFACT_SERVICE_URI"] = "gs://adk-sandbox-bucket"
 # -----------------------------------------------------------------------------
 print(f"Deploying 'bq_mcp_agent' to AgentPlatform in a single step...")
 
-# Construct the custom service account email and staging bucket dynamically
-service_account_email = os.environ.get(
-    "ADK_SERVICE_ACCOUNT", 
-    f"bq-mcp-agent-sa@{PROJECT_ID}.iam.gserviceaccount.com"
-)
+# Construct the staging bucket dynamically
 staging_bucket_uri = os.environ.get("ADK_ARTIFACT_SERVICE_URI", f"gs://adk-sandbox-bucket")
 
 # Deploy and activate session and memory services simultaneously using the official agent=adk_app specs
@@ -92,7 +96,7 @@ remote_agent = client.agent_engines.create(
             "bq_mcp_agent/__init__.py",
         ],
         "env_vars": env_vars,
-        "service_account": service_account_email,
+        "identity_type": vertexai_types.IdentityType.AGENT_IDENTITY,
         "staging_bucket": staging_bucket_uri,
     }
 )
