@@ -20,7 +20,8 @@ bq_mcp_agent/
 ├── README.md               # Developer manual and instructions
 ├── pyproject.toml          # Python package and dependency configurations
 ├── uv.lock                 # Locked dependencies
-├── .env                    # Local environment variables
+├── .env.template           # Template for local environment variables
+├── .env                    # Local environment variables (gitignored)
 ├── __init__.py             # Exposes app and root_agent
 ├── agent.py                # Single-Agent Data Science definition
 └── ap_runtime.py           # Production one-click Vertex AI Agent Runtime deployment script
@@ -30,12 +31,25 @@ bq_mcp_agent/
 
 ## ⚙️ Setup & Configuration
 
-### 1. Environment File (`.env`)
-Ensure a `.env` file exists in the root of `bq_mcp_agent/` with your GCP project variables and target model:
+### 1. Authentication Scopes (Crucial)
+This agent interacts with the **GCP Agent Registry** to resolve MCP toolsets. When authenticating Application Default Credentials (ADC) locally, you **must** request the `cloud-platform` scope to avoid `403 Forbidden (ACCESS_TOKEN_SCOPE_INSUFFICIENT)` errors:
+
+```bash
+gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform
+```
+
+### 2. Environment File (`.env`)
+Copy the `.env.template` to `.env` in the root of `bq_mcp_agent/` and configure your GCP project variables:
+
+```bash
+cp .env.template .env
+```
+
+Your `.env` file should be configured with your GCP project variables and target model:
 
 ```ini
 # Project configurations
-GOOGLE_CLOUD_PROJECT="gcp-sandbox-kwlee"
+GOOGLE_CLOUD_PROJECT="your-gcp-project-id"
 GOOGLE_CLOUD_LOCATION="global"
 GOOGLE_GENAI_USE_VERTEXAI=TRUE
 
@@ -44,7 +58,7 @@ GOOGLE_API_USE_CLIENT_CERTIFICATE="false"
 GOOGLE_API_USE_MTLS_ENDPOINT="never"
 ```
 
-### 2. Dependency Resolution
+### 3. Dependency Resolution
 Resolve and lock all ADK, GCP, and MCP dependencies using `uv`:
 
 ```bash

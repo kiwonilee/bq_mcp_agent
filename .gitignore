@@ -13,6 +13,7 @@ wheels/
 # Environment files
 .env
 .env.*
+!.env.template
 
 # ADK-generated files
 .adk/
