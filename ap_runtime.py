@@ -37,9 +37,9 @@ client = vertexai.Client(
     http_options=dict(api_version="v1beta1")
 )
 
-# Import and wrap the Data Science root agent
-from bq_mcp_agent.agent import root_agent
-adk_app = AdkApp(agent=root_agent)
+# Import and wrap the Data Science app
+from bq_mcp_agent.agent import app
+adk_app = AdkApp(app=app)
 
 # =====================================================================
 # 3. DEPLOYMENT PAYLOAD VARIABLES
@@ -47,7 +47,6 @@ adk_app = AdkApp(agent=root_agent)
 bq_env_keys = [
     "GEMINI_MODEL",
     "GOOGLE_GENAI_USE_VERTEXAI",
-    "GOOGLE_CLOUD_PROJECT",
     "GOOGLE_CLOUD_LOCATION",
     "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY",
     "OTEL_SEMCONV_STABILITY_OPT_IN",
@@ -69,7 +68,7 @@ requirements_list = [
     "google-adk[agent-identity]>=2.1.0",
     "a2a-sdk>=0.3.4,<0.4",
     "mcp>=1.27.1",
-    "google-cloud-aiplatform[agent_engines,adk]",
+    "google-cloud-aiplatform[agent_engines]>=1.154.0",
     "python-dotenv",
     "pydantic",
     "cloudpickle",
@@ -88,6 +87,7 @@ remote_agent = client.agent_engines.create(
         "display_name": "BigQuery MCP Agent",
         "description": "Expert Data Science Agent for querying enterprise BigQuery datasets, analyzing data, and summarizing findings.",
         "requirements": requirements_list,
+        "extra_packages": ["bq_mcp_agent"],
         "env_vars": env_vars,
         "identity_type": vertexai_types.IdentityType.AGENT_IDENTITY,
         "staging_bucket": staging_bucket_uri,

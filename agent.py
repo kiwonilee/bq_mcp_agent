@@ -5,16 +5,14 @@ from google.adk.agents import Agent
 from google.adk.models import Gemini
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.tools.preload_memory_tool import PreloadMemoryTool
+from google.adk.tools.base_toolset import BaseToolset
 
 from google.auth import default
 from google.genai import types
 from google.adk.apps import App
 
-project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
+project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "gcp-sandbox-kwlee")
 location = os.environ.get("GOOGLE_CLOUD_LOCATION", "global")
-
-if not project_id:
-    raise ValueError("GOOGLE_CLOUD_PROJECT environment variable not set.")
 
 # Initialize the client
 registry = AgentRegistry(
@@ -22,11 +20,25 @@ registry = AgentRegistry(
     location=location,
 )
 
-# Retrieve an MCP toolset using its resource name in short or full format
-# Short formats automatically imply the client's configured project and location
-# Short format: "mcpServers/SERVER_ID"
-# Full format: f"projects/{project_id}/locations/{location}/mcpServers/SERVER_ID"
-mcp_toolset = registry.get_mcp_toolset(
+class LazyMCPToolset(BaseToolset):
+    """MCP Toolset wrapper that defers tool registration API requests until runtime."""
+    def __init__(self, registry, server_resource_name, **kwargs):
+        super().__init__(**kwargs)
+        self._registry = registry
+        self._server_resource_name = server_resource_name
+        self._toolset = None
+
+    def _get_toolset(self):
+        if self._toolset is None:
+            self._toolset = self._registry.get_mcp_toolset(self._server_resource_name)
+        return self._toolset
+
+    async def get_tools(self, readonly_context=None):
+        return await self._get_toolset().get_tools(readonly_context)
+
+# Retrieve an MCP toolset lazily using its resource name in short or full format
+mcp_toolset = LazyMCPToolset(
+    registry,
     f"projects/gcp-sandbox-kwlee/locations/global/mcpServers/agentregistry-00000000-0000-0000-3781-81d342859334"
 )
 
